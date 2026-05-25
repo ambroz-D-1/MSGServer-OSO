@@ -18,7 +18,7 @@ except ConnectionRefusedError:
 
 print (server.recv(1024).decode())
 
-json_packet="""{"action":"login","properties":{"login":"admin","password":"secret"}}"""
+json_packet="""{"action":"login","properties":{"login":"Admin01","password":"elo"}}"""
 server.send(json_packet.encode())
 actualJson=json.loads(json_packet)
 
