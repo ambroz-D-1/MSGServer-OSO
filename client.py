@@ -1,6 +1,8 @@
+from dotenv import load_dotenv
+import json
 import os
 import socket
-from dotenv import load_dotenv
+
 
 load_dotenv()
 
@@ -16,16 +18,12 @@ except ConnectionRefusedError:
 
 print (server.recv(1024).decode())
 
-json_packet="""{
-    "action":"login",
-    "properties":
-    {
-        "login":"Ambroz",
-        "password":"$ekret123"
-    }
-    
-}"""
+json_packet="""{"action":"login","properties":{"login":"admin","password":"secret"}}"""
 server.send(json_packet.encode())
+actualJson=json.loads(json_packet)
+
+print("")
+
 while input()!='exit':
     msg=server.recv(1024).decode()
     print(msg)
