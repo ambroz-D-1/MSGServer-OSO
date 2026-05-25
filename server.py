@@ -30,7 +30,7 @@ def loginUser(userConnection,jsonPacket):
   with dbConnection:
     with dbConnection.cursor() as cursor:
       print(f"""Executing:\n{queryCheckCredentials}\nlogin: {credentials["login"]}\npassword: {credentials["password"]}""")
-      cursor.execute(queryCheckCredentials, (credentials["login"], credentials["password"]))      
+      cursor.execute(queryCheckCredentials, (credentials["login"], credentials["password"]))
       result = cursor.fetchone()
       if result is None:
         userConnection.send('Bad password!'.encode())
@@ -59,21 +59,21 @@ def registerUser(userConnection,jsonPacket):
 load_dotenv()
 
 dbUrl = os.getenv('DATABASE_URL')
-port = int(os.getenv('SRV_PORT'))                
+port = int(os.getenv('SRV_PORT'))
 maxClientCount = int(os.getenv('SRV_MAX_CONN'))
 
 dbConnection = psycopg2.connect(dbUrl)
 
 print(f"Port: {port}\nMax klientów: {maxClientCount}")
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)         
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print("Socket successfully created")
 
-server.bind(('0.0.0.0', port))         
+server.bind(('0.0.0.0', port))
 print("Socket bound to port %s" %(port))
 
-server.listen(maxClientCount)     
-print("socket is listening")            
+server.listen(maxClientCount)
+print("socket is listening")
 
 while True: 
 
