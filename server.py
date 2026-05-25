@@ -20,12 +20,17 @@ def connectionHandler(conn, addr):
 
   match action:
     case "login":
-        loginUser(conn,jsonPacket)
+      loginUser(conn,jsonPacket)
+    case "register":
+      registerUser(conn,jsonPacket)
     case _:
       conn.send('Invalid action!'.encode())
+      return -1
+  updateIP(jsonPacket["properties"]["login"], addr)
+  updateLastLogin(jsonPacket["properties"]["login"])
 
 def loginUser(userConnection,jsonPacket):
-  queryCheckCredentials = """SELECT * FROM USERS WHERE USERNAME = (%s) AND PASSWORD = (%s) """
+  queryCheckCredentials = """SELECT * FROM USERS WHERE user = (%s) AND password = (%s) """
   credentials=jsonPacket["properties"]
   with dbConnection:
     with dbConnection.cursor() as cursor:
@@ -38,10 +43,9 @@ def loginUser(userConnection,jsonPacket):
         print(f"Failed login attempt into account {credentials["login"]} from {addr}")
         return -1
       userConnection.send(f'Succesfully logged in as {credentials["login"]}!'.encode())
-      
 
 def registerUser(userConnection,jsonPacket):
-  queryAddUser = """INSERT INTO USERS (USERNAME, PASSWORD) VALUES (%s, %s)"""
+  queryAddUser = """INSERT INTO USERS (name, password) VALUES (%s, %s)"""
   credentials=jsonPacket["properties"]
   with dbConnection:
     with dbConnection.cursor() as cursor:
@@ -56,22 +60,26 @@ def registerUser(userConnection,jsonPacket):
       
       userConnection.send(f'Succesfully registered as {credentials["login"]}!'.encode())
 
+def updateIP(username, addr):
+  queryUpdateLastKnownIP = """UPDATE users SET ip = (%s) WHERE name=(%s)"""
+  with dbConnection:
+    with dbConnection.cursor() as cursor:
+      print(f"""Executing:\n{queryUpdateLastKnownIP}\nuser: {username}\naddr: {addr}""")
+      cursor.execute(queryUpdateLastKnownIP, (addr[0], username))
+      
+def updatePublicKey(username, pubKey):
+  queryUpdatePubKey = """UPDATE users SET public_key = (%s) WHERE name=(%s)"""
+  with dbConnection:
+    with dbConnection.cursor() as cursor:
+      print(f"""Executing:\n{queryUpdatePubKey}\nuser: {username}\npubKey: {pubKey}""")
+      cursor.execute(queryUpdatePubKey, (pubKey, username))
 
-#TODO
-# login user then change ip for username
-def updateIP():
-  pass
-
-#TODO
-# login user then change public_key for username
-def updatePublicKey():
-  pass
-
-#TODO
-# after success login update user's last_login
-def updatelastLogin():
-  pass
-
+def updateLastLogin(username):
+  queryUpdateLastLoginTime="""UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE name=(%s)"""
+  with dbConnection:
+    with dbConnection.cursor() as cursor:
+      print(f"""Executing:\n{queryUpdateLastLoginTime}\nuser: {username}""")
+      cursor.execute(queryUpdateLastLoginTime, (username,))
 
 def onNewConnection(userConnection):
   userConnection.send('Thank you for connecting!'.encode())
