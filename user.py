@@ -1,9 +1,13 @@
 import psycopg2
+import keyExchange
+
 class User():
     def __init__(self, connection, addr, dbConn):
         self.__addr = addr
         self.__dbConn = dbConn
         self.__conn = connection
+        self.__serverKeys = keyExchange.keyGen()
+        self.__onNewConnection()
     def __loginUser(self, jsonPacket):
         queryCheckCredentials = """SELECT * FROM USERS WHERE user = (%s) AND password = (%s) """
         credentials=jsonPacket["properties"]
@@ -49,3 +53,17 @@ class User():
             with self.__dbConn.cursor() as cursor:
                 print(f"""Executing:\n{queryUpdateLastKnownIP}\nuser: {self.username}\naddr: {self.__addr}""")
                 cursor.execute(queryUpdateLastKnownIP, (self.__addr[0], self.username))
+    
+    def __updatePulicKey(self):
+        queryUpdatePubKey = """UPDATE users SET public_key = (%s) WHERE name=(%s)"""
+        with self.__dbConn:
+            with self.__dbConn.cursor() as cursor:
+                print(f"""Executing:\n{queryUpdatePubKey}\nuser: {self.username}\npubKey: {self.peerPubKey}""")
+                cursor.execute(queryUpdatePubKey, (self.peerPubKey, self.username))
+    
+    def getSrvPubKey(self):
+        return self.__serverKeys["pubKey"]
+    
+    def setPeerPubKey(self, key):
+        self.peerPubKey = key
+        
