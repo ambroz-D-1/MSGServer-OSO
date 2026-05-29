@@ -19,12 +19,16 @@ except ConnectionRefusedError:
 print (server.recv(1024).decode())
 
 json_packet="""{"action":"login","properties":{"login":"Admin01","password":"elo"}}"""
+# json_packet="""{"action":"register","properties":{"login":"Rassena","password":"elozelo"}}"""
 server.send(json_packet.encode())
 actualJson=json.loads(json_packet)
 
 print("")
 
-while input()!='exit':
+# while input()!='exit':
+while True:
     msg=server.recv(1024).decode()
     print(msg)
+    server.send(input().encode())
+
 server.close()

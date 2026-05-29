@@ -1,8 +1,14 @@
+import json
+import socket
+
 import psycopg2
 import keyExchange
 
+import psycopg2.extensions
+
+
 class User():
-    def __init__(self,server, connection, addr, dbConn):
+    def __init__(self,server, connection:socket.socket, addr:tuple[str, int], dbConn:psycopg2.extensions.connection):
         self.__server = server
         self.__addr = addr
         self.__dbConn = dbConn
@@ -35,7 +41,9 @@ class User():
                 try:
                     cursor.execute(queryAddUser, (credentials["login"], credentials["password"]))
                 except psycopg2.errors.UniqueViolation:
-                    cursor.rollback()
+                    # TODO:
+                        # I have error here (rollback)
+                    # cursor.rollback()
                     self.__conn.send('Username already taken!'.encode())
                     return -1
         
@@ -93,3 +101,16 @@ class User():
     
     def __afterLoggedIn(self):
         self.__server.insertUser(self)
+
+    def handleRequest(self,jsonPacket:dict):
+        print("handleRequest: ",jsonPacket)
+        match jsonPacket["action"]:
+                case "login":
+                    print("handleRequest Login: ", jsonPacket)
+                case "message":
+                    print("handleRequest message: ", jsonPacket)
+                case "register":
+                    print("handleRequest register: ", jsonPacket)
+                    self.__registerUser(jsonPacket)
+                case _:
+                    print("handleRequest Unknown: ", jsonPacket)

@@ -1,3 +1,5 @@
+from typing import Any, Optional
+
 from dotenv import load_dotenv
 import json
 import os
@@ -34,10 +36,29 @@ class Server():
 
             threading.Thread(target=self.connectionHandler,args=(client,addr)).start()
 
-    def connectionHandler(self, conn, addr):
+    def connectionHandler(self, conn:socket.socket, addr:tuple[str, int]):
         user = User(self,conn,addr, self.dbConnection)
         conn.send('Thank you for connecting!'.encode())
         conn.send(str(user.getSrvPubKey()).encode())
+        while True:
+            msg = self.validateJsonPacket(conn.recv(1024).decode())
+            if msg:
+                user.handleRequest(msg)
+            #ping
+            conn.send("Hello!!!!".encode())
 
-    def insertUser(self, user):
+
+    def insertUser(self, user:User):
         self.userConnMap[user.getUsername()] = user
+
+
+    def validateJsonPacket(self, msg: str)->Optional[dict[str, Any]]:
+        try:
+            packet = json.loads(msg)
+            return packet
+        except json.JSONDecodeError as e:
+            print(f"Invalid JSON: {e}")
+            print(f"msg got: {msg}")
+            return None
+
+
