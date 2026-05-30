@@ -18,6 +18,9 @@ class User():
         self.__dbConn = dbConn
         self.__conn = connection
         self.__serverKeys = keyExchange.keyGen()
+
+        self.username : str
+
         threading.Thread(target=self.pingUser).start()
     
     def pingUser(self):
@@ -138,7 +141,10 @@ class User():
                 self.__registerUser(jsonPacket)
             case "listAllUsers":
                 allUsers = str(self.__server.listAllUsers())
-                self.__conn.send(make_message(content=allUsers,action=ACTION["listAllUsers"]))
+                self.__conn.send(make_message(content=allUsers,recipient=self.username,action=ACTION["listAllUsers"]))
+            case "listOnlineUsers":
+                onlineUsers = str(self.__server.listOnlineUsers())
+                self.__conn.send(make_message(content=onlineUsers,recipient=self.username,action=ACTION["listOnlineUsers"]))
             case _:
                 print("handleRequest Unknown: ", jsonPacket)
                 self.forwardMessage(make_message(TEXT["invalid_packet"]))
