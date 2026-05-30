@@ -6,6 +6,7 @@ import os
 import psycopg2
 import socket
 import threading
+from server_messages import ACTION, make_message, TEXT
 from user import User
 
 class Server():
@@ -38,14 +39,14 @@ class Server():
 
     def connectionHandler(self, conn:socket.socket, addr:tuple[str, int]):
         user = User(self,conn,addr, self.dbConnection)
-        conn.send('Thank you for connecting!'.encode())
-        conn.send(str(user.getSrvPubKey()).encode())
+        conn.send(make_message(TEXT["welcome"]))
+        conn.send(make_message(str(user.getSrvPubKey()),action=ACTION["publicKey"]))
         while True:
             msg = self.validateJsonPacket(conn.recv(1024).decode())
             if msg:
                 user.handleRequest(msg)
-            #ping
-            conn.send("Hello!!!!".encode())
+            else:
+                conn.send(make_message(TEXT["invalid_packet"]))
 
 
     def insertUser(self, user:User):

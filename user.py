@@ -6,6 +6,8 @@ import keyExchange
 
 import psycopg2.extensions
 
+from server_messages import ACTION, make_message, TEXT
+
 
 class User():
     def __init__(self,server, connection:socket.socket, addr:tuple[str, int], dbConn:psycopg2.extensions.connection):
@@ -14,7 +16,10 @@ class User():
         self.__dbConn = dbConn
         self.__conn = connection
         self.__serverKeys = keyExchange.keyGen()
-        
+    
+    #TODO 
+        # this is not secure :/
+        # cannot login 
     def __loginUser(self, jsonPacket):
         queryCheckCredentials = """SELECT * FROM USERS WHERE user = (%s) AND password = (%s) """
         credentials=jsonPacket["properties"]
@@ -24,14 +29,16 @@ class User():
                 cursor.execute(queryCheckCredentials, (credentials["login"], credentials["password"]))
                 result = cursor.fetchone()
                 if result is None:
-                    self.__conn.send('Bad password!'.encode())
-                    self.__conn.close()
-                    print(f"Failed login attempt into account {credentials["login"]} from {self.__addr}")
+                    self.__conn.send(make_message(TEXT["login_bad_password"],action=ACTION["login"]))
+                    # self.__conn.close()
+                    print(TEXT["login_fail"].format(username=credentials["login"],addr=self.__addr))
                     return -1
-                self.__conn.send(f'Succesfully logged in as {credentials["login"]}!'.encode())
+                self.__conn.send(make_message(TEXT["login_success"].format(username=credentials["login"]),action=ACTION["login"]))
         self.username = credentials["login"]
         self.__afterLoggedIn()
 
+    #TODO 
+        # this is not secure :/ 
     def __registerUser(self, jsonPacket):
         queryAddUser = """INSERT INTO USERS (name, password) VALUES (%s, %s)"""
         credentials=jsonPacket["properties"]
@@ -44,10 +51,10 @@ class User():
                     # TODO:
                         # I have error here (rollback)
                     # cursor.rollback()
-                    self.__conn.send('Username already taken!'.encode())
+                    self.__conn.send(make_message(TEXT["register_user_taken"].format(username=credentials["login"]),action=ACTION["register"]))
                     return -1
         
-            self.__conn.send(f'Succesfully registered as {credentials["login"]}!'.encode())
+            self.__conn.send(make_message(TEXT["register_success"].format(username=credentials["login"]),action=ACTION["register"]))
         self.username = credentials["login"]
         self.__afterLoggedIn()
 
@@ -102,11 +109,15 @@ class User():
     def __afterLoggedIn(self):
         self.__server.insertUser(self)
 
+
+    #TODO
+        # Maybe it will better inside srvClass.
     def handleRequest(self,jsonPacket:dict):
         print("handleRequest: ",jsonPacket)
         match jsonPacket["action"]:
                 case "login":
                     print("handleRequest Login: ", jsonPacket)
+                    self.__loginUser(jsonPacket)
                 case "message":
                     print("handleRequest message: ", jsonPacket)
                 case "register":
@@ -114,3 +125,4 @@ class User():
                     self.__registerUser(jsonPacket)
                 case _:
                     print("handleRequest Unknown: ", jsonPacket)
+                    self.forwardMessage(make_message(TEXT["invalid_packet"]))
