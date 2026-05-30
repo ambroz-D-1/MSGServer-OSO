@@ -58,7 +58,7 @@ class Server():
                 cursor.execute(queryAllUsers)
                 return cursor.fetchall()
             
-    def listOnlineUsers(self):
+    def listOnlineUsers(self) -> list:
         return list(self.userConnMap.keys())
 
     def validateJsonPacket(self, msg: str)->Optional[dict[str, Any]]:
