@@ -34,7 +34,10 @@ class User():
 
     #TODO 
         # this is not secure :/
-        # cannot login - fixed
+        # roddzielić zapytanie
+            # wyszukaj użytkownika -> weź jego hasło
+            # prównaj hasła -> zalogowany/ niezalogowany
+        # dołączyć element szyfrowania
     def __loginUser(self, jsonPacket):
         queryCheckCredentials = """SELECT * FROM USERS WHERE name = (%s) AND password = (%s) """
         credentials=jsonPacket["properties"]

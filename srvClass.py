@@ -51,6 +51,8 @@ class Server():
     def insertUser(self, user:User):
         self.userConnMap[user.getUsername()] = user
 
+    # TODO:
+        # poprawić/zdefiniować format zwracanych danych
     def listAllUsers(self):
         with self.dbConnection:
             with self.dbConnection.cursor() as cursor:
