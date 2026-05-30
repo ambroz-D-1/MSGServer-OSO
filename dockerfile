@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 FROM base AS run
 
-COPY keyExchange.py server.py srvClass.py user.py ./
+COPY keyExchange.py server.py srvClass.py user.py server_messages.py ./
 COPY --from=dep /install /usr/local
 COPY --from=dep /app /app
 
