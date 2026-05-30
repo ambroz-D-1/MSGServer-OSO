@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from srvClass import Server
 
 class User():
-    def __init__(self,server:Server, connection:socket.socket, addr:tuple[str, int], dbConn:psycopg2.extensions.connection):
+    def __init__(self,server:"Server", connection:socket.socket, addr:tuple[str, int], dbConn:psycopg2.extensions.connection):
         self.__server = server
         self.__addr = addr
         self.__dbConn = dbConn
