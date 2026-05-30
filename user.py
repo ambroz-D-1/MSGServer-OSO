@@ -102,10 +102,15 @@ class User():
     
     def getUsername(self):
         return self.username
-
-    def forwardMessage(self, message):
-        self.__conn.send(message.encode())
     
+    def __handleMessage(self, jsonPacket):
+        if jsonPacket["properties"]["sender"] != self.username:
+            print("Spoofing attack suspected, packet discarded")
+            return 1
+        targetUsername = jsonPacket["properties"]["recipient"]
+        target = self.__server.userConnMap[targetUsername].getConn()
+        target.send(jsonPacket.encode())
+
     def __afterLoggedIn(self):
         self.__server.insertUser(self)
 
@@ -120,6 +125,7 @@ class User():
                     self.__loginUser(jsonPacket)
                 case "message":
                     print("handleRequest message: ", jsonPacket)
+                    self.__handleMessage(jsonPacket)
                 case "register":
                     print("handleRequest register: ", jsonPacket)
                     self.__registerUser(jsonPacket)
