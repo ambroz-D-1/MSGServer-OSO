@@ -1,5 +1,7 @@
 import json
 import socket
+import threading
+import time
 
 import psycopg2
 import keyExchange
@@ -16,12 +18,19 @@ class User():
         self.__dbConn = dbConn
         self.__conn = connection
         self.__serverKeys = keyExchange.keyGen()
+        threading.Thread(target=self.pingUser).start()
     
+    def pingUser(self):
+        sleepInterval = 5
+        while True:
+            self.__conn.send("Hello!".encode())
+            time.sleep(sleepInterval)
+
     #TODO 
         # this is not secure :/
-        # cannot login 
+        # cannot login - fixed
     def __loginUser(self, jsonPacket):
-        queryCheckCredentials = """SELECT * FROM USERS WHERE user = (%s) AND password = (%s) """
+        queryCheckCredentials = """SELECT * FROM USERS WHERE name = (%s) AND password = (%s) """
         credentials=jsonPacket["properties"]
         with self.__dbConn:
             with self.__dbConn.cursor() as cursor:
