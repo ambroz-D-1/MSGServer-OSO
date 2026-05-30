@@ -2,6 +2,7 @@ import json
 import socket
 import threading
 import time
+from typing import TYPE_CHECKING
 
 import psycopg2
 import keyExchange
@@ -10,9 +11,11 @@ import psycopg2.extensions
 
 from server_messages import ACTION, make_message, TEXT
 
+if TYPE_CHECKING:
+    from srvClass import Server
 
 class User():
-    def __init__(self,server, connection:socket.socket, addr:tuple[str, int], dbConn:psycopg2.extensions.connection):
+    def __init__(self,server:Server, connection:socket.socket, addr:tuple[str, int], dbConn:psycopg2.extensions.connection):
         self.__server = server
         self.__addr = addr
         self.__dbConn = dbConn
@@ -131,8 +134,8 @@ class User():
             action = jsonPacket["action"]
             properties = jsonPacket["properties"]
         except KeyError:
-            print(f"Key Error: Received invalid packet from {self.addr}")
-            self.conn.send(make_message(TEXT["invalid_key"]))
+            print(f"Key Error: Received invalid packet from {self.__addr}")
+            self.__conn.send(make_message(TEXT["invalid_key"]))
         
         print("handleRequest: ",jsonPacket)
         match action:
@@ -153,4 +156,4 @@ class User():
                 self.__conn.send(make_message(content=onlineUsers,recipient=self.username,action=ACTION["listOnlineUsers"]))
             case _:
                 print("handleRequest Unknown: ", jsonPacket)
-                self.forwardMessage(make_message(TEXT["invalid_packet"]))
+                self.__conn.send(make_message(TEXT["invalid_packet"]))
