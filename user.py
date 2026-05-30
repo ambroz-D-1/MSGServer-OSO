@@ -94,17 +94,6 @@ class User():
     def setPeerPubKey(self, key):
         self.peerPubKey = key
     
-    def userAction(self, jsonPacket):
-        try:
-            action = jsonPacket["action"]
-            properties = jsonPacket["properties"]
-        except KeyError:
-            print(f"Received invalid packet from {self.addr}")
-            self.conn.send("Received invalid packet".encode())
-        
-        match action:
-            case _:
-                self.conn.send("Invalid action".encode())
 
     def getConn(self):
         return self.__conn
@@ -127,17 +116,24 @@ class User():
     #TODO
         # Maybe it will better inside srvClass.
     def handleRequest(self,jsonPacket:dict):
+        try:
+            action = jsonPacket["action"]
+            properties = jsonPacket["properties"]
+        except KeyError:
+            print(f"Key Error: Received invalid packet from {self.addr}")
+            self.conn.send(make_message(TEXT["invalid_key"]))
+        
         print("handleRequest: ",jsonPacket)
-        match jsonPacket["action"]:
-                case "login":
-                    print("handleRequest Login: ", jsonPacket)
-                    self.__loginUser(jsonPacket)
-                case "message":
-                    print("handleRequest message: ", jsonPacket)
-                    self.__handleMessage(jsonPacket)
-                case "register":
-                    print("handleRequest register: ", jsonPacket)
-                    self.__registerUser(jsonPacket)
-                case _:
-                    print("handleRequest Unknown: ", jsonPacket)
-                    self.forwardMessage(make_message(TEXT["invalid_packet"]))
+        match action:
+            case "login":
+                print("handleRequest Login: ", jsonPacket)
+                self.__loginUser(jsonPacket)
+            case "message":
+                print("handleRequest message: ", jsonPacket)
+                self.__handleMessage(jsonPacket)
+            case "register":
+                print("handleRequest register: ", jsonPacket)
+                self.__registerUser(jsonPacket)
+            case _:
+                print("handleRequest Unknown: ", jsonPacket)
+                self.forwardMessage(make_message(TEXT["invalid_packet"]))
