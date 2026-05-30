@@ -23,7 +23,7 @@ class User():
     def pingUser(self):
         sleepInterval = 5
         while True:
-            self.__conn.send("Hello!".encode())
+            self.__conn.send("\nHello!\n".encode())
             time.sleep(sleepInterval)
 
     #TODO 
@@ -87,10 +87,7 @@ class User():
             with self.__dbConn.cursor() as cursor:
                 print(f"""Executing:\n{queryUpdatePubKey}\nuser: {self.username}\npubKey: {self.peerPubKey}""")
                 cursor.execute(queryUpdatePubKey, (self.peerPubKey, self.username))
-    
-    def getSrvPubKey(self):
-        return self.__serverKeys["pubKey"]
-    
+        
     def setPeerPubKey(self, key):
         self.peerPubKey = key
     
@@ -115,7 +112,8 @@ class User():
 
     def __afterLoggedIn(self):
         self.__server.insertUser(self)
-
+        self.__updateLastLogin()
+        self.__updateIP()
 
     #TODO
         # Maybe it will better inside srvClass.

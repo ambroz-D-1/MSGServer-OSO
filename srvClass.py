@@ -40,7 +40,7 @@ class Server():
     def connectionHandler(self, conn:socket.socket, addr:tuple[str, int]):
         user = User(self,conn,addr, self.dbConnection)
         conn.send(make_message(TEXT["welcome"]))
-        conn.send(make_message(str(user.getSrvPubKey()),action=ACTION["publicKey"]))
+        #conn.send(make_message(str(user.getSrvPubKey()),action=ACTION["publicKey"]))
         while True:
             msg = self.validateJsonPacket(conn.recv(1024).decode())
             if msg:
