@@ -102,16 +102,22 @@ class User():
         return self.username
     
     def __handleMessage(self, jsonPacket):
-        if jsonPacket["properties"]["sender"] not in [self.getUsername, "Server"]:
+        if jsonPacket["properties"]["sender"] not in [self.getUsername()]:
             print("Spoofing attack suspected, packet discarded")
+            self.__conn.send(make_message(TEXT["user_wrong_sender"].format(username=self.username),recipient=self.getUsername()))
+            # print(jsonPacket["properties"]["sender"], self.getUsername())
             return 1
+        
         msg=json.dumps(jsonPacket).encode()
         targetUsername = jsonPacket["properties"]["recipient"]
-        if targetUsername == "Client":
-            self.__conn.send(msg)
+
+        if targetUsername in self.__server.listOnlineUsers():
+            target = self.__server.userConnMap[targetUsername].getConn()
+            target.send(msg)
             return 0
-        target = self.__server.userConnMap[targetUsername].getConn()
-        target.send(msg)
+
+        self.__conn.send(make_message(TEXT["user_offline"].format(username=targetUsername),recipient=self.getUsername()))
+        return 1
 
     def __afterLoggedIn(self):
         self.__server.insertUser(self)
