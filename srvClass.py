@@ -53,7 +53,7 @@ class Server():
 
     # TODO:
         # poprawić/zdefiniować format zwracanych danych
-    def listAllUsers(self):
+    def listAllUsers(self) -> list:
         with self.dbConnection:
             with self.dbConnection.cursor() as cursor:
                 queryAllUsers = """SELECT name FROM users"""
