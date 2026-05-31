@@ -20,8 +20,6 @@ class User():
         self.__addr = addr
         self.__dbConn = dbConn
         self.__conn = connection
-        self.__serverKeys = keyExchange.keyGen()
-
         self.username : str
 
         threading.Thread(target=self.pingUser).start()
@@ -98,8 +96,7 @@ class User():
                 cursor.execute(queryUpdatePubKey, (self.peerPubKey, self.username))
         
     def setPeerPubKey(self, key):
-        self.peerPubKey = key
-    
+        self.peerPubKey = key    
 
     def getConn(self):
         return self.__conn
