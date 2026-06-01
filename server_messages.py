@@ -20,7 +20,8 @@ ACTION = {
     "register": "register",
     "message": "message",
     "login": "login",
-    "publicKey": "publicKey",
+    "fetchPubKey": "fetchPubKey",
+    "setPubKey": "setPubKey",
     "listAllUsers": "listAllUsers",
     "listOnlineUsers": "listOnlineUsers"
 }
