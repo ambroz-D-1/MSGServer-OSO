@@ -1,7 +1,7 @@
 Wymagane do projektu
-1. Logowanie
-2. Lista aktywnych i nieaktywnych użytkowników
-3. Komunikacja 1 do 1
+1. Logowanie - działa
+2. Lista aktywnych i nieaktywnych użytkowników - działa
+3. Komunikacja 1 do 1 - działa, bez szyfrowania
 4. Informacja o nieprzesłaniu wiadomości
 
 Rozszerzenia:

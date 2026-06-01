@@ -4,6 +4,7 @@ import os
 import socket
 from time import sleep
 from server_messages import TEXT, ACTION, make_message
+import ast
 load_dotenv()
 
 port = int(os.getenv('SRV_PORT'))
@@ -18,22 +19,34 @@ except ConnectionRefusedError:
 
 print (server.recv(1024).decode())
 
-user="Admin01"
-passwd="elo"
+user=input("Enter your username: ")
+passwd=input("Enter your password: ")
 
 listUsers=make_message(content="",sender=user,recipient="Server",action=ACTION["listAllUsers"])
-login="""{"action":"login", "properties":{"login":"Admin01", "password":"elo"}}""".encode()
+login=("""{"action":"login", "properties":{"login":"%s", "password":"%s"}}""" % (user, passwd)).encode()
 listOnline=make_message(content="",sender="Client",recipient="Server", action=ACTION["listOnlineUsers"])
+msgPiwo=make_message(content="Piwo", sender=user, recipient="tester", action=ACTION["message"])
 # json_packet="""{"action":"register","properties":{"login":"Rassena","password":"elozelo"}}"""
 server.send(login)
 print(server.recv(1024).decode())
 sleep(1)
 server.send(listUsers)
-print(server.recv(1024).decode())
 sleep(1)
+print(server.recv(1024).decode())
+
 server.send(listOnline)
-print(server.recv(1024).decode())
-sleep(1)
+onlineUsersMSG=server.recv(1024).decode()
+onlineUsersJSON=json.loads(onlineUsersMSG)
+onlineUsersSTR=onlineUsersJSON["properties"]["content"]
+onlineUsers= ast.literal_eval(onlineUsersSTR)
+print("ONLINE USERS:\n", onlineUsers)
+print("TYPE:\n", type(onlineUsers))
+onlineUsers.remove(user)
+sleep(10)
+for onlineUser in onlineUsers:
+    msg=make_message(content="Hello "+onlineUser, sender=user, recipient=onlineUser, action=ACTION["message"])
+    server.send(msg)
+
 
 # while input()!='exit':
 while True:
