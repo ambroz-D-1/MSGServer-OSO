@@ -23,6 +23,7 @@ ACTION = {
     "login": "login",
     "fetchPubKey": "fetchPubKey",
     "setPubKey": "setPubKey",
+    "sendPubKey": "sendPubKey",
     "listAllUsers": "listAllUsers",
     "listOnlineUsers": "listOnlineUsers"
 }
