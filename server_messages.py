@@ -19,6 +19,7 @@ TEXT = {
 ACTION = {
     "register": "register",
     "message": "message",
+    "ping": "ping",
     "login": "login",
     "fetchPubKey": "fetchPubKey",
     "setPubKey": "setPubKey",
