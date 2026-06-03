@@ -18,12 +18,14 @@ class User():
         self.__dbConn = dbConn
         self.__conn = connection
         self.username : str
+        self.pingStatusOK = threading.Event()
     
     def pingUser(self):
-        sleepInterval = 5
-        while True:
-            self.__conn.send("\nHello!\n".encode())
-            time.sleep(sleepInterval)
+        pingInterval = 15
+        while self.pingStatusOK.wait(pingInterval):
+            self.pingStatusOK.clear()
+        print("Connection lost")
+        self.__conn.close()
 
     def __loginUser(self, jsonPacket):
         queryCheckCredentials = """SELECT * FROM USERS WHERE name = (%s) AND password = (%s) """
@@ -123,6 +125,9 @@ class User():
         
         print("handleRequest: ",jsonPacket)
         match action:
+            case "ping":
+                print("Received PING", jsonPacket)
+                self.pingStatusOK.set()
             case "login":
                 print("handleRequest Login: ", jsonPacket)
                 self.__loginUser(jsonPacket)
