@@ -123,11 +123,12 @@ class User():
             print(f"Key Error: Received invalid packet from {self.__addr}")
             self.__conn.send(make_message(TEXT["invalid_key"]))
         
-        print("handleRequest: ",jsonPacket)
+        if action !="ping":
+            print("handleRequest: ",jsonPacket)
         response = None
         match action:
             case "ping":
-                print("Received PING", jsonPacket)
+                #print("Received PING", jsonPacket)
                 self.pingStatusOK.set()
             case "login":
                 print("handleRequest Login: ", jsonPacket)
