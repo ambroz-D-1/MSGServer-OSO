@@ -58,7 +58,10 @@ class Server():
                 exit(-1)
 
     def insertUser(self, user:User):
-        self.userConnMap[user.getUsername()] = user
+        try:
+            self.userConnMap[user.getUsername()].append(user)
+        except KeyError:
+            self.userConnMap[user.getUsername()] = [user]
 
     # TODO:
         # poprawić/zdefiniować format zwracanych danych

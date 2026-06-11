@@ -101,8 +101,8 @@ class User():
         targetUsername = jsonPacket["properties"]["recipient"]
 
         if targetUsername in self.__server.listOnlineUsers():
-            target = self.__server.userConnMap[targetUsername].getConn()
-            target.send(msg)
+            for i in self.__server.userConnMap[targetUsername]: # send message to all user session with this username
+                i.getConn().send(msg)
             return 0
 
         self.__conn.send(make_message(TEXT["user_offline"].format(username=targetUsername),recipient=self.getUsername()))
