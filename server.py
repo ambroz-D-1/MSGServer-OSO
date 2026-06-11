@@ -51,8 +51,11 @@ class Server():
                     conn.send(make_message(TEXT["invalid_packet"]))
             except (BrokenPipeError, ConnectionResetError):
                 print("Closing connection")
-                self.userConnMap.pop(user.getUsername)
-                break
+                try:
+                    self.userConnMap.pop(user.getUsername())
+                except AttributeError: #if a user didn't yet log in, username would be null and cause this error
+                    pass
+                exit(-1)
 
     def insertUser(self, user:User):
         self.userConnMap[user.getUsername()] = user

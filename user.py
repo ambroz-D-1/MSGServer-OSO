@@ -124,6 +124,7 @@ class User():
             self.__conn.send(make_message(TEXT["invalid_key"]))
         
         print("handleRequest: ",jsonPacket)
+        response = None
         match action:
             case "ping":
                 print("Received PING", jsonPacket)
@@ -139,10 +140,15 @@ class User():
                 self.__registerUser(jsonPacket)
             case "listAllUsers":
                 allUsers = str(self.__server.listAllUsers())
-                self.__conn.send(make_message(content=allUsers,recipient=self.getUsername(),action=ACTION["listAllUsers"]))
+                response = make_message(content=allUsers,recipient=self.getUsername(),action=ACTION["listAllUsers"])
             case "listOnlineUsers":
                 onlineUsers = str(self.__server.listOnlineUsers())
-                self.__conn.send(make_message(content=onlineUsers,recipient=self.getUsername(),action=ACTION["listOnlineUsers"]))
+                response = make_message(content=onlineUsers,recipient=self.getUsername(),action=ACTION["listOnlineUsers"])
             case _:
                 print("handleRequest Unknown: ", jsonPacket)
-                self.__conn.send(make_message(TEXT["invalid_packet"]))
+                response = make_message(TEXT["invalid_packet"])
+        if response is not None:
+            try:
+                self.__conn.send(response)
+            except BrokenPipeError:
+                print(f"Unable to send respond - Broken Pipe. Response:{response.decode()}")
