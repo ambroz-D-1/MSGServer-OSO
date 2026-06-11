@@ -139,10 +139,10 @@ class User():
                 self.__registerUser(jsonPacket)
             case "listAllUsers":
                 allUsers = str(self.__server.listAllUsers())
-                self.__conn.send(make_message(content=allUsers,recipient=self.username,action=ACTION["listAllUsers"]))
+                self.__conn.send(make_message(content=allUsers,recipient=self.getUsername(),action=ACTION["listAllUsers"]))
             case "listOnlineUsers":
                 onlineUsers = str(self.__server.listOnlineUsers())
-                self.__conn.send(make_message(content=onlineUsers,recipient=self.username,action=ACTION["listOnlineUsers"]))
+                self.__conn.send(make_message(content=onlineUsers,recipient=self.getUsername(),action=ACTION["listOnlineUsers"]))
             case _:
                 print("handleRequest Unknown: ", jsonPacket)
                 self.__conn.send(make_message(TEXT["invalid_packet"]))
