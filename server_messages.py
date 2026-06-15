@@ -22,8 +22,8 @@ ACTION = {
     "ping": "ping",
     "login": "login",
     "fetchPubKey": "fetchPubKey",
-    "setPubKey": "setPubKey",
-    "sendPubKey": "sendPubKey",
+    "setPubKey": "setPubKey", # z klienta do serwera, klient ustawia swój klucz publiczny w bazie danych
+    "sendPubKey": "sendPubKey", # z serwera do klienta, odpowiada na request o klucz publiczny innego klienta
     "listAllUsers": "listAllUsers",
     "listOnlineUsers": "listOnlineUsers"
 }
@@ -32,13 +32,24 @@ def make_message(
     content: str,
     recipient: str = "Client",
     sender: str = "Server",
-    action: str = ACTION["message"]
+    action: str = ACTION["message"],
+    mode: str = "msg"
 ) -> bytes:
-    return json.dumps({
-        "action": action,
-        "properties": {
-            "sender": sender,
-            "recipient": recipient,
-            "content": content
-        }
-    }).encode()
+    match mode:
+        case "login":
+            return json.dumps({
+                "action": action,
+                "properties": {
+                    "login":sender,
+                    "password":content
+                }
+            }).encode()
+        case _:
+            return json.dumps({
+                "action": action,
+                "properties": {
+                    "sender": sender,
+                    "recipient": recipient,
+                    "content": content
+                }
+            }).encode()
