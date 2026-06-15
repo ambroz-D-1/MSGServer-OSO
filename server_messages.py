@@ -29,7 +29,7 @@ ACTION = {
 }
 
 def make_message(
-    content: str,
+    content: str = "",
     recipient: str = "Client",
     sender: str = "Server",
     action: str = ACTION["message"],
@@ -44,6 +44,16 @@ def make_message(
                     "password":content
                 }
             }).encode()
+        
+        case "ping":
+            return json.dups({
+                "action": ACTION["ping"],
+                "properties": {
+                    "sender": sender,
+                    "recipient": recipient,
+                    "content": TEXT["ping"]
+                }
+            })
         case _:
             return json.dumps({
                 "action": action,
