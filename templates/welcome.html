@@ -22,8 +22,9 @@
     <div class="flex items-center gap-x-8">
       <div class="flex items-center gap-x-3">
         <div class="text-right">
-          <div class="text-sm font-medium">Nie zalogowano</div>
-          <div class="text-xs text-red-800">Status: offline</div>
+          <div class="text-sm font-medium">{{ USER }}</div>
+          <div class="text-xs text-green-400">Status: online</div>
+          <a href="{{ url_for('logout') }}">Wyloguj się</a>
         </div>
         <div class="w-9 h-9 bg-gradient-to-br from-blue-500 via-orange-300 to-red-600 rounded-2xl flex items-center justify-center text-neutral-900 text-2xl font-semibold"><i class="fa-solid fa-circle-user"></i></div>
       </div>
@@ -34,10 +35,13 @@
 <div class="flex justify-center items-center py-80">
   <!-- FORM HOLDER -->
   <div class="bg-zinc-600/70 border-2 border-zinc-200/80 rounded-3xl p-8 flex justify-center items-center">
-      <h1 class="w-full h-9 text-white font-bold py-2 mt-7">Successfully logged in</h1>
-      <br/><br/>
-      <h2><a href="{{ url_for('message') }}">MAILBOX</a></h2>
-  </div>
+    <ul>
+      <li><h1 class="w-full h-9 text-white font-bold py-2 mt-7">Successfully logged in as {{ USER }}</h1></li>
+      <li><h1 class="w-full h-9 text-white font-bold py-2 mt-7"><a href="{{ url_for('message') }}">MAILBOX</a></h1></li>
+      <li><h1 class="w-full h-9 text-white font-bold py-2 mt-7"><a href="{{ url_for('logout') }}">LOGOUT</a></h1>
+      </h1>
+    </ul>
+    </div>
 </div>
 
 </body>
