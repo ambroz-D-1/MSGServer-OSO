@@ -1,5 +1,6 @@
 cryptography
 dotenv
+flask
 #json
 #os
 psycopg2-binary
