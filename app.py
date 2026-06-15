@@ -42,7 +42,7 @@ def send_and_receive(content: str, action: str = ACTION["message"], sender: str 
         return json.loads(response.decode())
 
 def serverRequest(val: str):
-    rawJson = send_and_receive({"action":val,"properties":{"sender":"Client","recipient":"Server","content":""}})
+    rawJson = send_and_receive(content="", action=val)
     return rawJson["properties"]["content"]
 
 def authCheck():
@@ -53,6 +53,7 @@ def confirmAuth():
     session["validAuth"]=True
 
 app = Flask(__name__)
+app.secret_key = os.getenv('FLASK_SS_KEY')
 threading.Thread(target=ping,args=()).start()
 
 @app.get("/")
@@ -129,7 +130,10 @@ def message():
     if request.method == 'POST':
         recipient = request.form['user']
         msg = request.form['msg']
-        send_and_receive({"action":ACTION["message"],"sender":session["username"]})
-    onlineUsers=serverRequest(ACTION["listOnlineUsers"])
-    allUsers=serverRequest(ACTION["listAllUsers"])
-    return render_template("message.html", USERNAME=session["username"], online_users=onlineUsers,all_users=allUsers)
+        send_and_receive(content=msg,action=ACTION["message"],sender=session["username"],recipient=recipient)
+    onlineUsers=eval(serverRequest(ACTION["listOnlineUsers"]))
+    allUsers=eval(serverRequest(ACTION["listAllUsers"]))
+    return render_template("message.html", USERNAME=session["username"], online_users=onlineUsers,all_users=allUsers,messages=[])
+@app.post("/send_message")
+def send_message():
+    pass
