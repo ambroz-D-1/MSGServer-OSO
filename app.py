@@ -26,10 +26,9 @@ except ConnectionRefusedError:
 print(server.recv(1024))
 print(server.recv(1024))
 def ping():
-    pingMsg = """{"properties":{"content":TEXT["ping"],"sender":"Client","recipient":"Server"},"action":ACTION["ping"]}"""
     while threading.active_count() > 1:
         try:
-            send_and_receive(pingMsg)
+            send_and_receive(mode="ping", sender="Client", recipient="Server")
             sleep(5)
         except:
             print("Connection lost")
