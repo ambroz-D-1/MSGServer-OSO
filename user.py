@@ -122,9 +122,9 @@ class User():
         except KeyError:
             print(f"Key Error: Received invalid packet from {self.__addr}")
             self.__conn.send(make_message(TEXT["invalid_key"]))
-        
-        if action !="ping":
-            print("handleRequest: ",jsonPacket)
+            action = "error"
+        #if action !="ping":
+        #   print("handleRequest: ",jsonPacket)
         response = None
         match action:
             case "ping":
@@ -136,6 +136,8 @@ class User():
             case "message":
                 print("handleRequest message: ", jsonPacket)
                 self.__handleMessage(jsonPacket)
+            case "logout":
+                print("handleRequest logout:", jsonPacket)
             case "register":
                 print("handleRequest register: ", jsonPacket)
                 self.__registerUser(jsonPacket)
