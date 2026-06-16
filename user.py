@@ -44,6 +44,11 @@ class User():
         self.username = credentials["login"]
         self.__afterLoggedIn()
 
+    def __logoutUser(self, jsonPacket):
+        user=jsonPacket["properites"]["login"]
+        self.__server.userConnMap.pop(user)
+        #self.__conn.close()
+
     def __registerUser(self, jsonPacket):
         queryAddUser = """INSERT INTO USERS (name, password) VALUES (%s, %s)"""
         credentials=jsonPacket["properties"]
@@ -138,6 +143,7 @@ class User():
                 self.__handleMessage(jsonPacket)
             case "logout":
                 print("handleRequest logout:", jsonPacket)
+                self.__logoutUser(jsonPacket)
             case "register":
                 print("handleRequest register: ", jsonPacket)
                 self.__registerUser(jsonPacket)

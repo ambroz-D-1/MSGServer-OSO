@@ -21,6 +21,7 @@ ACTION = {
     "message": "message",
     "ping": "ping",
     "login": "login",
+    "logout": "logout",
     "fetchPubKey": "fetchPubKey",
     "setPubKey": "setPubKey", # z klienta do serwera, klient ustawia swój klucz publiczny w bazie danych
     "sendPubKey": "sendPubKey", # z serwera do klienta, odpowiada na request o klucz publiczny innego klienta
@@ -42,6 +43,13 @@ def make_message(
                 "properties": {
                     "login":sender,
                     "password":content
+                }
+            }).encode()
+        case "logout":
+            return json.dumps({
+                "action": action,
+                "properties": {
+                    "login":sender
                 }
             }).encode()
         
