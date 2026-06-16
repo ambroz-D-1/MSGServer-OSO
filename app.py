@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, g
 from functools import wraps
 from hashlib import sha256
 import json
@@ -17,33 +17,76 @@ port = int(os.getenv('SRV_PORT'))
 addr = os.getenv('SRV_ADDR')
 server = socket.socket()
 lock = threading.Lock()
-# Próba połączenia do serwera uywając podanych danych
-try:
-    server.connect((addr, port))
-except ConnectionRefusedError:
-    print("Unable to connect to server")
-    exit(-1)
 
-print(server.recv(1024))
-print(server.recv(1024))
-def ping():
-    while threading.active_count() > 1:
+user_connections: dict[str, socket.socket] = {} # pula połączeń
+user_locks: dict[str, threading.Lock] = {} # pula locków
+
+def get_server(username: str = None):
+    key = username or session.get("username", "anonymous")
+    
+    if key not in user_connections or user_connections[key].fileno() == -1:
+        s = socket.socket()
         try:
-            send_and_receive(mode="ping", sender="Client", recipient="Server")
-            sleep(5)
-        except:
-            print("Connection lost")
-            exit(-1)
+            s.connect((addr, port))
+        except ConnectionRefusedError:
+            return None
+        s.recv(1024)  # welcome
+        s.recv(1024)  # pubkey
+        user_connections[key] = s
+        user_locks[key] = threading.Lock()
+    
+    return user_connections[key]
 
-def send_and_receive(content: str, action: str = ACTION["message"], sender: str = "Client", recipient: str = "Server", mode: str = "Default") -> dict:
-    with lock:
-        packet = make_message(content=content, action=action, sender=sender, recipient=recipient, mode=mode)
-        server.sendall(packet)
-        response = server.recv(1024)
+def get_lock(username: str = None):
+    key = username or session.get("username", "anonymous")
+    return user_locks.get(key, threading.Lock())
+
+
+def ping(username: str):
+    while username in user_connections:
+        try:
+            srv = user_connections.get(username)
+            if not srv or srv.fileno() == -1:
+                break
+            lck = user_locks.get(username, threading.Lock())
+            with lck:
+                packet = make_message(content="", action=ACTION["ping"], 
+                                      sender=username, recipient="Server", mode="ping")
+                srv.sendall(packet)
+                srv.recv(1024)
+            sleep(5)
+        except Exception:
+            print(f"Ping failed for {username}")
+            break
+
+def send_and_receive(content: str, action: str = ACTION["message"], 
+                     sender: str = "Client", recipient: str = "Server", 
+                     mode: str = "Default") -> dict:
+    username = session.get("username", "Client")
+    srv = get_server(username)
+    lck = get_lock(username)
+    
+    with lck:
+        try:
+            packet = make_message(
+                content=content,
+                action=action, 
+                sender=session["username"], 
+                recipient=recipient, mode=mode)
+        except KeyError:
+            packet = make_message(
+                content=content,
+                action=action, 
+                sender=sender,
+                recipient=recipient,
+                mode=mode)
+        srv.sendall(packet)
+        response = srv.recv(1024)
         return json.loads(response.decode())
 
+
 def serverRequest(val: str):
-    rawJson = send_and_receive(content="", action=val)
+    rawJson = send_and_receive(content="", action=val, mode=val)
     return rawJson["properties"]["content"]
 
 def authCheck():
@@ -61,12 +104,19 @@ def authRedirect(f):
         return f(*args, **kwargs)
     return decorated
 
-def confirmAuth():
+def confirmAuth(username: str):
     session["validAuth"]=True
+    threading.Thread(target=ping, args=(username,), daemon=True).start()
 
 app = Flask(__name__)
 app.secret_key = os.urandom(32)
-threading.Thread(target=ping,args=()).start()
+
+@app.teardown_appcontext
+def close_server(exception):
+    """Zamyka połączenie po każdym request jeśli użytkownik nie jest zalogowany."""
+    server = g.pop('server', None)
+    if server and not session.get('validAuth'):
+        server.close()
 
 @app.get("/")
 def index():
@@ -74,7 +124,20 @@ def index():
 
 @app.get("/logout")
 def logout():
-    session["validAuth"]=False
+    username = session.get("username")
+    session["validAuth"] = False
+    
+    try:
+        serverRequest("logout")
+    except Exception as e:
+        print(f"Logout error: {e}")
+    finally:
+        # Zamknij i usuń socket tego użytkownika
+        if username and username in user_connections:
+            user_connections[username].close()
+            del user_connections[username]
+            del user_locks[username]
+    
     return redirect(url_for("index"))
 
 @app.route("/login", methods=['GET','POST'])
@@ -90,12 +153,15 @@ def login():
     if (password == ""):
         return render_template('login.html', PASSWD_ERR='Enter passwd', PREV_USERNAME=username)
     
+    get_server(username)  # inicjalizuje socket
+    
     passwdHash = sha256(password.encode('utf-8')).hexdigest()
     response = send_and_receive(
-    content=passwdHash,
-    action=ACTION["login"],
-    sender=username, mode="login"
+        content=passwdHash,
+        action=ACTION["login"],
+        sender=username, mode="login"
     )
+
 
     try:
         result = response["properties"]["content"]
@@ -104,7 +170,7 @@ def login():
     if result[0] != "S":
         return redirect(url_for("login"))
     session["username"]=username
-    confirmAuth()
+    confirmAuth(username)
     return redirect(url_for("welcome"))
 
 @app.route("/register", methods=['GET','POST'])
@@ -139,7 +205,7 @@ def register():
     if result[0] != "S":
         return redirect(url_for("register"))
     session["username"]=username
-    confirmAuth()
+    confirmAuth(username)
     return redirect(url_for("welcome"))
 
 @app.route("/welcome", methods=['GET','POSt'])
@@ -165,7 +231,7 @@ def send_message():
 
 if __name__ == '__main__':
     app.run(
-        host=os.getenv('FLASK_HOST', '0.0.0.0'),
+        host=os.getenv('FLASK_HOST', '127.0.0.1'),
         port=int(os.getenv('FLASK_PORT', 5000)),
         debug=True,
         use_reloader=False
