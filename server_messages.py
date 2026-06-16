@@ -11,9 +11,9 @@ TEXT = {
     "login_success": "Succesfully logged in as {username}!",
     "login_fail": "Failed login attempt into account {username} from {addr}",
     "login_bad_password": "Bad password!",
+    "login_already_online": "Failed login attempt into account {username}, already logged in",
     "user_offline": "Recipient {username} is offline",
     "user_wrong_sender": "Sender {username} is not accepted by Server!"
-    
 
 }
 ACTION = {

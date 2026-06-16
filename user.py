@@ -40,9 +40,17 @@ class User():
                     # self.__conn.close()
                     print(TEXT["login_fail"].format(username=credentials["login"],addr=self.__addr))
                     return -1
+                if self.__checkAlreadyLogged(credentials["login"]): 
+                    self.__conn.send(make_message(TEXT["login_already_online"].format(username=credentials["login"]),action=ACTION["login"]))
+                    print(TEXT["login_already_online"].format(username=credentials["login"]))
+                    return -1
                 self.__conn.send(make_message(TEXT["login_success"].format(username=credentials["login"]),action=ACTION["login"]))
         self.username = credentials["login"]
         self.__afterLoggedIn()
+
+
+    def __checkAlreadyLogged(self,username:str) -> bool:
+        return username in self.__server.listOnlineUsers()
 
     def __logoutUser(self, jsonPacket):
         user=jsonPacket["properties"]["login"]
