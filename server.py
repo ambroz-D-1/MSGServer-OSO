@@ -77,17 +77,17 @@ class Server():
         except KeyError:
             self.userConnMap[user.getUsername()] = [user]
 
-    # TODO:
-        # poprawić/zdefiniować format zwracanych danych
-    def listAllUsers(self) -> list:
+
+    def listAllUsers(self) -> list[str]:
         with self.dbConnection:
             with self.dbConnection.cursor() as cursor:
                 queryAllUsers = """SELECT name FROM users"""
                 cursor.execute(queryAllUsers)
-                return cursor.fetchall()
+                return [row[0] for row in cursor.fetchall()]
             
-    def listOnlineUsers(self) -> list:
-        return list(self.userConnMap.keys())
+    def listOnlineUsers(self) -> list[str]:
+        return sorted(self.userConnMap.keys())
+
 
     def validateJsonPacket(self, msg: str)->Optional[dict[str, Any]]:
         try:
