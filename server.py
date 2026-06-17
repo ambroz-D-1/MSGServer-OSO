@@ -204,15 +204,38 @@ class User():
 class Server():
     def __init__(self):
         load_dotenv()
-        self.dbUrl = os.getenv('DATABASE_URL')
-        self.port = int(os.getenv('SRV_PORT'))
-        self.maxClientCount = int(os.getenv('SRV_MAX_CONN'))
+
+        # Be quiet Pylance
+
+        db_url = os.getenv("DATABASE_URL")
+        port_str = os.getenv("SRV_PORT")
+        max_conn_str = os.getenv("SRV_MAX_CONN")
+
+        if not db_url:
+            raise ValueError("DATABASE_URL is missing or empty")
+        if not port_str:
+            raise ValueError("SRV_PORT is missing or empty")
+        if not max_conn_str:
+            raise ValueError("SRV_MAX_CONN is missing or empty")
+
+        try:
+            port = int(port_str)
+        except ValueError as e:
+            raise ValueError(f"Invalid SRV_PORT value: {port_str}") from e
+        try:
+            max_client_count = int(max_conn_str)
+        except ValueError as e:
+            raise ValueError(f"Invalid SRV_MAX_CONN value: {max_conn_str}") from e
+
+        self.dbUrl = db_url
+        self.port = port
+        self.maxClientCount = max_client_count
         self.dbConnection = psycopg2.connect(self.dbUrl)
         self.userConnMap = {}
         self.keys = keyExchange.keyGen()
 
-
         log.info("Server config: port=%s max_clients=%s", self.port, self.maxClientCount)
+
 
     def openConnection(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
