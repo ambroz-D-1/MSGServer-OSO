@@ -53,7 +53,7 @@ class User():
         return username in self.__server.listOnlineUsers()
 
     def __logoutUser(self, jsonPacket):
-        print("I've got: ",jsonPacket)
+        print("DEBUG: ","__logoutUser" ,jsonPacket)
         user=self.getUsername()
         self.__server.userConnMap.pop(user)
         self.__conn.send(make_message(
@@ -109,10 +109,15 @@ class User():
     def getUsername(self):
         return self.username
     
+    def __isSpoofing(self,jsonPacket) -> bool:
+        # print("DEBUG: ", "__isSpoofing: ", jsonPacket["properties"]["sender"], "is not" ,self.getUsername())
+        return jsonPacket["properties"]["sender"] is self.getUsername()
+
     def __handleMessage(self, jsonPacket):
-        if jsonPacket["properties"]["sender"] not in [self.getUsername()]:
-            print("Spoofing attack suspected, packet discarded: /n", TEXT["user_wrong_sender"].format(username=self.getUsername()))
-            self.__conn.send(make_message(TEXT["user_wrong_sender"].format(username=self.getUsername()),recipient=self.getUsername()))
+        if self.__isSpoofing(jsonPacket):
+            print(TEXT["server_spoofing"].format(method="__handleMessage"))
+            print(TEXT["user_wrong_sender"].format(username=self.getUsername()))
+            self.__conn.send(make_message(TEXT["user_wrong_sender"].format(username=jsonPacket["properties"]["sender"]),recipient=self.getUsername()))
             # print(jsonPacket["properties"]["sender"], self.getUsername())
             return 1
         
@@ -174,6 +179,13 @@ class User():
                 response = make_message(TEXT["invalid_packet"])
         if response is not None:
             try:
-                self.__conn.send(response)
+                if self.__isSpoofing(jsonPacket):
+                    print("\t DEBUG: response in spoofing", jsonPacket)
+                    self.__conn.send(make_message(TEXT["user_wrong_sender"].format(username=self.getUsername()),recipient=self.getUsername()))
+                else:
+                    print("\t DEBUG: msg: ", jsonPacket)
+                    print("\t DEBUG: response: ", response)
+                    self.__conn.send(response)
+
             except BrokenPipeError:
                 print(TEXT["BrokenPipeError"].format(response=response.decode()))

@@ -17,6 +17,7 @@ TEXT = {
     "user_wrong_sender": "Sender {username} is not accepted by Server!",
     "BrokenPipeError": "Unable to send respond - Broken Pipe. Response:{response}",
     "server_close_connection": "Closing connection: {user}",
+    "server_spoofing": "Spoofing attack suspected in {method}, packet discarded",
     "temp_response": "You sneaky bastard... -> {reason}",
 
 
