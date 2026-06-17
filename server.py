@@ -1,3 +1,5 @@
+import sys
+
 from dotenv import load_dotenv
 import json
 import keyExchange
@@ -8,6 +10,16 @@ from server_messages import ACTION, make_message, TEXT
 import threading
 from typing import Any, Optional
 from user import User
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    stream=sys.stdout,
+    force=True
+)
+
+log = logging.getLogger(__name__)
 
 class Server():
     def __init__(self):
@@ -19,22 +31,24 @@ class Server():
         self.userConnMap = {}
         self.keys = keyExchange.keyGen()
 
-        print(f"Port: {self.port}\nMax klientów: {self.maxClientCount}")
+
+        log.info("Server config: port=%s max_clients=%s", self.port, self.maxClientCount)
 
     def openConnection(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print("Socket successfully created")
+        
+        log.info("Socket successfully created")
 
         self.server.bind(('0.0.0.0', self.port))
-        print("Socket bound to port %s" %(self.port))
+        log.info("Socket bound to port %s" %(self.port))
 
     def listen(self):        
         self.server.listen(self.maxClientCount)
-        print("socket is listening")
+        log.info("socket is listening")
 
         while True: 
             client, addr = self.server.accept()     
-            print('Got connection from', addr)
+            log.info("Got connection from %s:%s", addr[0], addr[1])
 
             threading.Thread(target=self.connectionHandler,args=(client,addr)).start()            
 
@@ -50,7 +64,7 @@ class Server():
                 else:
                     conn.send(make_message(TEXT["invalid_packet"]))
             except (BrokenPipeError, ConnectionResetError,OSError):
-                print(TEXT["server_close_connection"].format(user=f"{user.getUsername()} {addr}"))
+                log.warning(TEXT["server_close_connection"].format(user=f"{user.getUsername()} {addr}"))
                 try:
                     self.userConnMap.pop(user.getUsername())
                 except (AttributeError, KeyError): #if a user didn't yet log in, username would be null and cause this error
@@ -80,6 +94,9 @@ class Server():
             packet = json.loads(msg)
             return packet
         except json.JSONDecodeError as e:
-            print(f"Invalid JSON: {e}")
-            print(f"msg got: {msg}")
+            log.warning(
+                "Invalid JSON from client: error=%s raw_message=%r",
+                e,
+                msg
+            )
             return None

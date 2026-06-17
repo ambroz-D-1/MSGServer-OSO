@@ -1,3 +1,6 @@
+import logging
+import sys
+
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session, g
 from functools import wraps
@@ -9,6 +12,16 @@ import threading
 from time import sleep
 from server_messages import TEXT, ACTION, make_message
 import ast
+
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    stream=sys.stdout,
+    force=True
+)
+
+log = logging.getLogger(__name__)
 
 # wczytaj zmienne środowiskowe z pliku .env
 load_dotenv()
@@ -56,7 +69,7 @@ def ping(username: str):
                 srv.recv(1024)
             sleep(5)
         except Exception:
-            print(f"Ping failed for {username}")
+            log.warning(f"Ping failed for {username}")
             break
 
 def send_and_receive(content: str, action: str = ACTION["message"], 
@@ -130,7 +143,7 @@ def logout():
     try:
         serverRequest("logout")
     except Exception as e:
-        print(f"Logout error: {e}")
+        log.warning(f"Logout error: {e}")
     finally:
         # Zamknij i usuń socket tego użytkownika
         if username and username in user_connections:
@@ -197,7 +210,7 @@ def register():
     sender=username, mode="login"
     )
 
-    print(response)
+    log.info(response)
     try:
         result = response["properties"]["content"]
     except KeyError:

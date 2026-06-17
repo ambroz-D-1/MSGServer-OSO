@@ -1,5 +1,7 @@
 import json
+import logging
 import socket
+import sys
 import threading
 import time
 from typing import TYPE_CHECKING
@@ -10,6 +12,15 @@ from server_messages import ACTION, make_message, TEXT
 
 if TYPE_CHECKING:
     from server import Server
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    stream=sys.stdout,
+    force=True
+)
+
+log = logging.getLogger(__name__)
 
 class User():
     def __init__(self,server:"Server", connection:socket.socket, addr:tuple[str, int], dbConn:psycopg2.extensions.connection):
@@ -24,7 +35,7 @@ class User():
         pingInterval = 15
         while self.pingStatusOK.wait(pingInterval):
             self.pingStatusOK.clear()
-        print("pingUser: ", "Connection lost: ",self.username, " " ,self.__addr)
+        log.warning("pingUser, closing connection user=%s addr=%s", self.username, self.__addr)
         self.__conn.close()
 
     def __loginUser(self, jsonPacket):
@@ -32,17 +43,17 @@ class User():
         credentials=jsonPacket["properties"]
         with self.__dbConn:
             with self.__dbConn.cursor() as cursor:
-                print(f"""Executing:\n{queryCheckCredentials}\nlogin: {credentials["login"]}\npassword: {credentials["password"]}""")
+                log.debug(f"""Executing:\n{queryCheckCredentials}\nlogin: {credentials["login"]}\npassword: {credentials["password"]}""")
                 cursor.execute(queryCheckCredentials, (credentials["login"], credentials["password"]))
                 result = cursor.fetchone()
                 if result is None:
                     self.__conn.send(make_message(TEXT["login_bad_password"],action=ACTION["login"]))
                     # self.__conn.close()
-                    print(TEXT["login_fail"].format(username=credentials["login"],addr=self.__addr))
+                    log.warning(TEXT["login_fail"].format(username=credentials["login"],addr=self.__addr))
                     return -1
                 if self.__checkAlreadyLogged(credentials["login"]): 
                     self.__conn.send(make_message(TEXT["login_already_online"].format(username=credentials["login"]),action=ACTION["login"]))
-                    print(TEXT["login_already_online"].format(username=credentials["login"]))
+                    log.warning(TEXT["login_already_online"].format(username=credentials["login"]))
                     return -1
                 self.__conn.send(make_message(TEXT["login_success"].format(username=credentials["login"]),action=ACTION["login"]))
         self.username = credentials["login"]
@@ -53,7 +64,7 @@ class User():
         return username in self.__server.listOnlineUsers()
 
     def __logoutUser(self, jsonPacket):
-        print("DEBUG: ","__logoutUser" ,jsonPacket)
+        log.debug(jsonPacket)
         user=self.getUsername()
         self.__server.userConnMap.pop(user)
         self.__conn.send(make_message(
@@ -66,7 +77,7 @@ class User():
     def __registerUser(self, jsonPacket):
         queryAddUser = """INSERT INTO USERS (name, password) VALUES (%s, %s)"""
         credentials=jsonPacket["properties"]
-        print(f"""Attempting execution of:\n{queryAddUser}\nlogin: {credentials["login"]}\npassword: {credentials["password"]}""")
+        log.debug(f"""Attempting execution of:\n{queryAddUser}\nlogin: {credentials["login"]}\npassword: {credentials["password"]}""")
         with self.__dbConn:
             with self.__dbConn.cursor() as cursor:
                 try:
@@ -86,21 +97,21 @@ class User():
         queryUpdateLastLoginTime="""UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE name=(%s)"""
         with self.__dbConn:
             with self.__dbConn.cursor() as cursor:
-                print(f"""Executing:\n{queryUpdateLastLoginTime}\nuser: {self.username}""")
+                log.debug(f"""Executing:\n{queryUpdateLastLoginTime}\nuser: {self.username}""")
                 cursor.execute(queryUpdateLastLoginTime, (self.username,))
     
     def __updateIP(self):
         queryUpdateLastKnownIP = """UPDATE users SET ip = (%s) WHERE name=(%s)"""
         with self.__dbConn:
             with self.__dbConn.cursor() as cursor:
-                print(f"""Executing:\n{queryUpdateLastKnownIP}\nuser: {self.username}\naddr: {self.__addr}""")
+                log.debug(f"""Executing:\n{queryUpdateLastKnownIP}\nuser: {self.username}\naddr: {self.__addr}""")
                 cursor.execute(queryUpdateLastKnownIP, (self.__addr[0], self.username))
     
     def __updatePulicKey(self, key):
         queryUpdatePubKey = """UPDATE users SET public_key = (%s) WHERE name=(%s)"""
         with self.__dbConn:
             with self.__dbConn.cursor() as cursor:
-                print(f"""Executing:\n{queryUpdatePubKey}\nuser: {self.username}\npubKey: {key}""")
+                log.debug(f"""Executing:\n{queryUpdatePubKey}\nuser: {self.username}\npubKey: {key}""")
                 cursor.execute(queryUpdatePubKey, (key, self.username))
         
     def getConn(self):
@@ -110,15 +121,14 @@ class User():
         return self.username
     
     def __isSpoofing(self,jsonPacket) -> bool:
-        # print("DEBUG: ", "__isSpoofing: ", jsonPacket["properties"]["sender"], "is not" ,self.getUsername())
-        return jsonPacket["properties"]["sender"] is self.getUsername()
+        log.debug("Check Spoofing: %s != %s",jsonPacket["properties"]["sender"],self.getUsername() )
+        return jsonPacket["properties"]["sender"] != self.getUsername()
 
     def __handleMessage(self, jsonPacket):
         if self.__isSpoofing(jsonPacket):
-            print(TEXT["server_spoofing"].format(method="__handleMessage"))
-            print(TEXT["user_wrong_sender"].format(username=self.getUsername()))
+            log.warning(TEXT["server_spoofing"].format(method="__handleMessage"))
+            log.warning(TEXT["user_wrong_sender"].format(username=self.getUsername()))
             self.__conn.send(make_message(TEXT["user_wrong_sender"].format(username=jsonPacket["properties"]["sender"]),recipient=self.getUsername()))
-            # print(jsonPacket["properties"]["sender"], self.getUsername())
             return 1
         
         msg=json.dumps(jsonPacket).encode()
@@ -144,29 +154,29 @@ class User():
             action = jsonPacket["action"]
             properties = jsonPacket["properties"]
         except KeyError:
-            print(f"Key Error: Received invalid packet from {self.__addr}")
+            log.warning(f"Key Error: Received invalid packet from {self.__addr}")
             self.__conn.send(make_message(TEXT["invalid_key"]))
             action = "error"
         #if action !="ping":
-        #   print("handleRequest: ",jsonPacket)
+        #   log.debug("handleRequest: ",jsonPacket)
         response = None
         match action:
             case "ping":
-                #print("Received PING", jsonPacket)
+                log.debug("Received PING", jsonPacket)
                 self.pingStatusOK.set()
             case "login":
-                print("handleRequest Login: ", jsonPacket)
+                log.info("handleRequest Login: ", jsonPacket)
                 self.__loginUser(jsonPacket)
             case "message":
-                print("handleRequest message: ", jsonPacket)
+                log.info("handleRequest message: ", jsonPacket)
                 self.__handleMessage(jsonPacket)
             case "logout":
                 #TODO:
                     # logout w sumie nie potrzebuje info o nazwie uzytkownika, on jest samym soba
-                print("handleRequest logout:", jsonPacket)
+                log.info("handleRequest logout:", jsonPacket)
                 self.__logoutUser(jsonPacket)
             case "register":
-                print("handleRequest register: ", jsonPacket)
+                log.info("handleRequest register: ", jsonPacket)
                 self.__registerUser(jsonPacket)
             case "listAllUsers":
                 allUsers = str(self.__server.listAllUsers())
@@ -175,17 +185,17 @@ class User():
                 onlineUsers = str(self.__server.listOnlineUsers())
                 response = make_message(content=onlineUsers,recipient=self.getUsername(),action=ACTION["listOnlineUsers"])
             case _:
-                print("handleRequest Unknown: ", jsonPacket)
+                log.info("handleRequest Unknown: ", jsonPacket)
                 response = make_message(TEXT["invalid_packet"])
         if response is not None:
             try:
                 if self.__isSpoofing(jsonPacket):
-                    print("\t DEBUG: response in spoofing", jsonPacket)
+                    log.warning("%s is spoofing: %s",self.getUsername(), jsonPacket)
                     self.__conn.send(make_message(TEXT["user_wrong_sender"].format(username=self.getUsername()),recipient=self.getUsername()))
                 else:
-                    print("\t DEBUG: msg: ", jsonPacket)
-                    print("\t DEBUG: response: ", response)
+                    log.debug("msg: %s", jsonPacket)
+                    log.debug("response: %s", response)
                     self.__conn.send(response)
 
             except BrokenPipeError:
-                print(TEXT["BrokenPipeError"].format(response=response.decode()))
+                log.warning(TEXT["BrokenPipeError"].format(response=response.decode()))
