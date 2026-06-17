@@ -24,7 +24,7 @@ class User():
         pingInterval = 15
         while self.pingStatusOK.wait(pingInterval):
             self.pingStatusOK.clear()
-        print("Connection lost")
+        print("pingUser: ", "Connection lost: ",self.username, " " ,self.__addr)
         self.__conn.close()
 
     def __loginUser(self, jsonPacket):
