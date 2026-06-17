@@ -240,19 +240,25 @@ def welcome():
 @app.route("/message", methods=['GET','POST'])
 @authRedirect
 def message():
-    if request.method == 'POST':
-        recipient = request.form['user']
-        msg = request.form['msg']
-        send_and_receive(content=msg,action=ACTION["message"],sender=session["username"],recipient=recipient)
     onlineUsers=ast.literal_eval(serverRequest(ACTION["listOnlineUsers"]))
     allUsers=ast.literal_eval(serverRequest(ACTION["listAllUsers"]))
     offlineUsers=set(allUsers).difference(set(onlineUsers))
-    return render_template("message.html", USERNAME=session["username"], online_users=onlineUsers,offlineUsers=offlineUsers,messages=[])
+    return render_template("message.html", USERNAME=session["username"], online_users=onlineUsers,offlineUsers=offlineUsers,allUsers=allUsers,messages=[])
 
 @app.post("/send_message")
 @authRedirect
 def send_message():
-    pass
+    #recipients = request.form.getlist('users')
+    recipient = request.form['user']
+    msg = request.form['msg']
+    #for recipient in recipients:
+    send_and_receive(
+            content=msg,
+            action=ACTION["message"],
+            sender=session["username"],
+            recipient=recipient
+        )
+    return redirect(url_for("message"))
 
 if __name__ == '__main__':
     app.run(
