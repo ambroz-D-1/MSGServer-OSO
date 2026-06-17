@@ -30,47 +30,70 @@ listUsers=make_message(content="",sender=user,recipient="Server",action=ACTION["
 
 # request do serwera o uwierzytelnienie używając podanych referencji 
 login=("""{"action":"login", "properties":{"login":"%s", "password":"%s"}}""" % (user, passwd)).encode()
+logout=("""{"action":"logout", "properties":{"login":"%s"}}""" % ("cli test")).encode()
 
 #request do serwera o podanie listy aktywnych użytkowników
-listOnline=make_message(content="",sender="Client",recipient="Server", action=ACTION["listOnlineUsers"])
+listOnline=make_message(content="",sender=user,recipient="Server", action=ACTION["listOnlineUsers"])
 
 # wiadomość do innego uźytkownika
 msgPiwo=make_message(content="Piwo", sender=user, recipient="tester", action=ACTION["message"])
 
 # wiadomość HELLO
-ping=make_message(content=TEXT["ping"],sender="Client",recipient="Server",action=ACTION["ping"])
+ping=make_message(content=TEXT["ping"],sender=user,recipient="Server",action=ACTION["ping"])
 
 
+print("login:")
 server.send(login)
 print(server.recv(1024).decode())
 sleep(1)
+
+print()
+
+print("listUsers:")
+print(listUsers)
 server.send(listUsers)
 sleep(1)
 print(server.recv(1024).decode())
 
+print()
+
+print("listOnline:")
+print(listOnline)
 server.send(listOnline)
-#wczytanie listy aktywnych użytkowników z odpowiedzi serwera
-onlineUsers=ast.literal_eval(json.loads(server.recv(1024).decode())["properties"]["content"])
+sleep(1)
+print(server.recv(1024).decode())
 
-print("ONLINE USERS:\n", onlineUsers)
-print("TYPE:\n", type(onlineUsers))
-onlineUsers.remove(user)
-sleep(10)
-# wysyłanie wiadomości do wszystkich aktywnych użytkowników
-for onlineUser in onlineUsers:
-    msg=make_message(content="Hello "+onlineUser, sender=user, recipient=onlineUser, action=ACTION["message"])
-    server.send(msg)
+# #wczytanie listy aktywnych użytkowników z odpowiedzi serwera
+# onlineUsers=ast.literal_eval(json.loads(server.recv(1024).decode())["properties"]["content"])
 
 
-# wypisywanie otrzymanych wiadomości z serwera
-server.send(ping)
-while True:
-    msg=server.recv(1024).decode()
-    print(msg+"\n")
-    userInput=input()
-    if userInput == "exit":
-        break
-    server.send(userInput.encode())
-    server.send(ping)
+# print("ONLINE USERS:\n", onlineUsers)
+# print("TYPE:\n", type(onlineUsers))
+# onlineUsers.remove(user)
+# sleep(10)
+# # wysyłanie wiadomości do wszystkich aktywnych użytkowników
+# for onlineUser in onlineUsers:
+#     msg=make_message(content="Hello "+onlineUser, sender=user, recipient=onlineUser, action=ACTION["message"])
+#     server.send(msg)
+
+
+# # wypisywanie otrzymanych wiadomości z serwera
+# server.send(ping)
+
+print()
+
+print("logout:")
+server.send(logout)
+print(server.recv(1024).decode())
+
+
+# while True:
+#     msg=server.recv(1024).decode()
+#     print(msg+"\n")
+#     userInput=input()
+#     if userInput == "exit":
+#         break
+#     server.send(userInput.encode())
+#     server.send(ping)
 
 server.close()
