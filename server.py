@@ -261,7 +261,7 @@ class Server():
         conn.send(make_message(str(self.keys["pub"]),action=ACTION["sendPubKey"]))
         while True:
             try:
-                msg = self.validateJsonPacket(conn.recv(1024).decode())
+                msg = self.validateJsonPacket(conn.recv(1024).decode(),addr)
                 if msg:
                     user.handleRequest(msg)
                 else:
@@ -292,13 +292,15 @@ class Server():
         return sorted(list(self.userConnMap.keys()))
 
 
-    def validateJsonPacket(self, msg: str)->Optional[dict[str, Any]]:
+    def validateJsonPacket(self, msg: str,addr:tuple[str, int])->Optional[dict[str, Any]]:
         try:
             packet = json.loads(msg)
             return packet
         except json.JSONDecodeError as e:
             log.warning(
-                "Invalid JSON from client: error=%s raw_message=%r",
+                "Invalid JSON from client %s:%s: error=%s raw_message=%r",
+                addr[0],
+                addr[1],
                 e,
                 msg
             )
