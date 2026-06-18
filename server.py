@@ -157,36 +157,38 @@ class User():
             log.warning(f"Key Error: Received invalid packet from {f"{self.__addr[0]}:{self.__addr[1]}"}")
             self.__conn.send(make_message(TEXT["invalid_key"]))
             action = "error"
-        #if action !="ping":
-        #   log.debug("handleRequest: ",jsonPacket)
         response = None
+        
+        handleRequest_log_str = f"handleRequest {action} from {self.username} {self.__addr[0]}:{self.__addr[1]} : {jsonPacket} "
+        
         match action:
             case "ping":
-                log.debug("Received PING: %s", jsonPacket)
+                log.debug(handleRequest_log_str)
                 self.pingStatusOK.set()
             case "login":
-                log.debug("handleRequest Login: %s", jsonPacket)
+                log.debug(handleRequest_log_str)
                 self.__loginUser(jsonPacket)
             case "message":
-                log.debug("handleRequest message: %s", jsonPacket)
+                log.debug(handleRequest_log_str)
                 self.__handleMessage(jsonPacket)
             case "logout":
-                #TODO:
-                    # logout w sumie nie potrzebuje info o nazwie uzytkownika, on jest samym soba
-                log.debug("handleRequest logout: %s", jsonPacket)
+                log.debug(handleRequest_log_str)
                 self.__logoutUser(jsonPacket)
             case "register":
-                log.debug("handleRequest register: %s", jsonPacket)
+                log.debug(handleRequest_log_str)
                 self.__registerUser(jsonPacket)
             case "listAllUsers":
+                log.debug(handleRequest_log_str)
                 allUsers = str(self.__server.listAllUsers())
                 response = make_message(content=allUsers,recipient=self.getUsername(),action=ACTION["listAllUsers"])
             case "listOnlineUsers":
+                log.debug(handleRequest_log_str)
                 onlineUsers = str(self.__server.listOnlineUsers())
                 response = make_message(content=onlineUsers,recipient=self.getUsername(),action=ACTION["listOnlineUsers"])
             case _:
-                log.debug("handleRequest Unknown: %s", jsonPacket)
+                log.debug("Unknown %s", handleRequest_log_str)
                 response = make_message(TEXT["invalid_packet"])
+        
         if response is not None:
             try:
                 if self.__isSpoofing(jsonPacket):
